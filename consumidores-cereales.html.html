@@ -1216,6 +1216,11 @@ function init() {
   buildProductTags('productTagsDesktop');
   buildProductTags('productTagsMobile');
   buildProvinceList();
+  // Reset filtros al cargar para asegurar que se muestren todas las empresas
+  _dashStatusFilter = null;
+  selectedProvince = 'all';
+  selectedProducts = [];
+  selectedCredit = 'all';
   filterAll();
   setTimeout(checkAlertas, 1500);
 }
@@ -1298,7 +1303,7 @@ function getFiltered() {
   var q = (document.getElementById('searchInput').value||'').toLowerCase();
   return companies.filter(function(c){
     var matchProv = selectedProvince === 'all' || c.province === selectedProvince;
-    var matchProd = c.products.some(function(p){ return selectedProducts.indexOf(p) > -1; });
+    var matchProd = selectedProducts.length === 0 || c.products.some(function(p){ return selectedProducts.indexOf(p) > -1; });
     var matchCredit = selectedCredit === 'all' || c.credit === selectedCredit;
     var matchQ = !q || c.name.toLowerCase().indexOf(q) > -1 || (c.cuit||'').indexOf(q) > -1;
     return matchProv && matchProd && matchCredit && matchQ;
@@ -1401,6 +1406,26 @@ function getScoreLabel(score) {
   return { label:'· Baja', cls:'score-low' };
 }
 
+
+function getStatusBadge(id) {
+  try {
+    var all = JSON.parse(localStorage.getItem('fdc_follow') || '{}');
+    var f = all[id] || { status: 'prospecto' };
+    var st = f.status || 'prospecto';
+    var ESTADOS = {
+      prospecto:  { icon:'○', label:'Prospecto',   color:'var(--text3)',  bg:'rgba(150,150,150,.1)' },
+      enviado:    { icon:'✉', label:'Enviado',      color:'#5b9cf6',      bg:'rgba(91,156,246,.1)'  },
+      respondio:  { icon:'↩', label:'Respondió',   color:'#e89632',      bg:'rgba(232,150,50,.1)'  },
+      negociando: { icon:'◈', label:'Negociando',  color:'#a78bfa',      bg:'rgba(167,139,250,.1)' },
+      cliente:    { icon:'★', label:'Cliente',      color:'var(--accent)', bg:'rgba(126,200,80,.1)' },
+      descartado: { icon:'✕', label:'Descartado',  color:'#e05a5a',      bg:'rgba(220,60,60,.1)'   }
+    };
+    var est = ESTADOS[st] || ESTADOS.prospecto;
+    return '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;' +
+      'background:' + est.bg + ';color:' + est.color + ';font-family:DM Mono,monospace;">' +
+      est.icon + ' ' + est.label + '</span>';
+  } catch(e) { return ''; }
+}
 function renderCards(list) {
   var cont = document.getElementById('cardsContainer');
   cont.innerHTML = '';
@@ -2732,10 +2757,6 @@ function toggleView(view) {
   if(cardBtn) cardBtn.classList.toggle('active', view==='cards');
   if(listBtn) listBtn.classList.toggle('active', view==='list');
   filterAll();
-}
-
-function switchSegment(seg) {
-  // ya implementado arriba
 }
 
 window.addEventListener('DOMContentLoaded', function() {
